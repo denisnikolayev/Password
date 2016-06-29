@@ -1,14 +1,16 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+using Autofac;
+using Autofac.Extensions.DependencyInjection;
+using Epam.Password.Server.Configuration;
+using Epam.Password.Server.Model;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Microsoft.EntityFrameworkCore;
 
-namespace Server
+namespace Epam.Password.Server
 {
     public class Startup
     {
@@ -24,14 +26,50 @@ namespace Server
 
         public IConfigurationRoot Configuration { get; }
 
-        // This method gets called by the runtime. Use this method to add services to the container.
-        public void ConfigureServices(IServiceCollection services)
+        public IServiceProvider ConfigureServicesBase(IServiceCollection services)
         {
-            // Add framework services.
             services.AddMvc();
+
+            var autofacBuilder = new ContainerBuilder();
+            autofacBuilder.Populate(services);
+            autofacBuilder.RegisterModule<ServicesModule>();
+
+            var container = autofacBuilder.Build();
+
+            return container.Resolve<IServiceProvider>();
         }
 
-        // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
+       
+        public IServiceProvider ConfigureDeveloperServices(IServiceCollection services)
+        {
+            var connection = @"Server=(localdb)\mssqllocaldb;Database=EFGetStarted.AspNetCore.NewDb;Trusted_Connection=True;";
+            services.AddDbContext<Db>(options => options.UseSqlServer(connection));
+
+            return ConfigureServicesBase(services);
+        }
+
+        /// <summary>
+        /// For production environment
+        /// </summary>
+        /// <param name="services"></param>
+        /// <returns></returns>
+        public IServiceProvider ConfigureServices(IServiceCollection services)
+        {
+            //TODO: load db connection from appsettings.production.json
+            var connection = @"Server=(localdb)\mssqllocaldb;Database=EFGetStarted.AspNetCore.NewDb;Trusted_Connection=True;";
+            services.AddDbContext<Db>(options => options.UseSqlServer(connection));
+            
+            return ConfigureServicesBase(services);
+        }
+
+        public IServiceProvider ConfigureTestServices(IServiceCollection services)
+        {
+            services.AddDbContext<Db>(options => options.UseInMemoryDatabase());
+
+            return ConfigureServicesBase(services);
+        }
+
+
         public void Configure(IApplicationBuilder app, IHostingEnvironment env, ILoggerFactory loggerFactory)
         {
             loggerFactory.AddConsole(Configuration.GetSection("Logging"));
