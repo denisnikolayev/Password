@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using Autofac;
 using Autofac.Extensions.DependencyInjection;
 using Epam.Password.Server.Configuration;
@@ -9,6 +10,8 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace Epam.Password.Server
 {
@@ -26,6 +29,12 @@ namespace Epam.Password.Server
 
         public IConfigurationRoot Configuration { get; }
 
+        public void SetInitializerDataBase(IServiceProvider provider)
+        {
+            var db = provider.GetService<Db>();
+            db.Database.Migrate();
+        }
+
         public IServiceProvider ConfigureServicesBase(IServiceCollection services)
         {
             services.AddMvc();
@@ -42,7 +51,7 @@ namespace Epam.Password.Server
        
         public IServiceProvider ConfigureDeveloperServices(IServiceCollection services)
         {
-            var connection = @"Server=(localdb)\mssqllocaldb;Database=EFGetStarted.AspNetCore.NewDb;Trusted_Connection=True;";
+            var connection = Configuration.GetConnectionString("DefaultConnection");
             services.AddDbContext<Db>(options => options.UseSqlServer(connection));
 
             return ConfigureServicesBase(services);
@@ -56,10 +65,14 @@ namespace Epam.Password.Server
         public IServiceProvider ConfigureServices(IServiceCollection services)
         {
             //TODO: load db connection from appsettings.production.json
-            var connection = @"Server=(localdb)\mssqllocaldb;Database=EFGetStarted.AspNetCore.NewDb;Trusted_Connection=True;";
+            var connection = Configuration.GetConnectionString("DefaultConnection");
             services.AddDbContext<Db>(options => options.UseSqlServer(connection));
-            
-            return ConfigureServicesBase(services);
+
+            var provider = ConfigureServicesBase(services);
+
+            SetInitializerDataBase(provider);
+
+            return provider;
         }
 
         public IServiceProvider ConfigureTestServices(IServiceCollection services)

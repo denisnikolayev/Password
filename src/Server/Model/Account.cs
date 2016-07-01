@@ -16,9 +16,10 @@ namespace Epam.Password.Server.Model
 
     }
 
+    [Flags]
     public enum VerificationType
     {
-        Sms,
-        Questions
+        Sms = 1,
+        Questions = 2
     }
 }
