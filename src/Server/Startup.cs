@@ -29,7 +29,7 @@ namespace Epam.Password.Server
 
         public IConfigurationRoot Configuration { get; }
 
-        public void SetInitializerDataBase(IServiceProvider provider)
+        public void SetInitializerDatabase(IServiceProvider provider)
         {
             var db = provider.GetService<Db>();
             db.Database.Migrate();
@@ -49,12 +49,16 @@ namespace Epam.Password.Server
         }
 
        
-        public IServiceProvider ConfigureDeveloperServices(IServiceCollection services)
+        public IServiceProvider ConfigureDevelopmentServices(IServiceCollection services)
         {
             var connection = Configuration.GetConnectionString("DefaultConnection");
             services.AddDbContext<Db>(options => options.UseSqlServer(connection));
 
-            return ConfigureServicesBase(services);
+            var provider = ConfigureServicesBase(services);
+
+            SetInitializerDatabase(provider);
+
+            return provider;
         }
 
         /// <summary>
@@ -70,7 +74,7 @@ namespace Epam.Password.Server
 
             var provider = ConfigureServicesBase(services);
 
-            SetInitializerDataBase(provider);
+            SetInitializerDatabase(provider);
 
             return provider;
         }
