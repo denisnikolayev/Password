@@ -1,10 +1,21 @@
 ﻿import * as React from "react"
-import {render} from "react-dom";
-import "babel-polyfill";
+import { render } from "react-dom";
+import { Router, Route, Link, browserHistory, IndexRoute } from "react-router"
+//import "babel-polyfill";
 import * as $ from "jquery";
+
+import {Master} from "./pages/Master"
+import {Home} from "./pages/Home/Home"
 
 $.post("/api/ping",
     {},
-    data => {
-        render(<h1>Hello world {data}</h1>, document.getElementById("app"));
+    () => {
+        render(
+            <Router history={browserHistory}>
+                <Route path="/" component={Master}>
+                    <IndexRoute component={Home}/>
+                </Route>
+            </Router>,
+            document.getElementById("app")
+        );
     });
